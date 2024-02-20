@@ -8,11 +8,11 @@ import com.rusefi.io.CommandQueue;
 import com.rusefi.io.LinkManager;
 import com.rusefi.io.serial.BaudRateHolder;
 import com.rusefi.maintenance.StLinkFlasher;
-import com.rusefi.maintenance.VersionChecker;
 import com.rusefi.ui.*;
 import com.rusefi.ui.console.MainFrame;
 import com.rusefi.ui.console.TabbedPanel;
 import com.rusefi.ui.engine.EngineSnifferPanel;
+import com.rusefi.ui.knock.KnockPane;
 import com.rusefi.ui.logview.LogViewer;
 import com.rusefi.ui.lua.LuaScriptPanel;
 import com.rusefi.ui.util.DefaultExceptionHandler;
@@ -115,6 +115,11 @@ public class ConsoleUI {
         if (!linkManager.isLogViewer()) {
             SensorSnifferPane sensorSniffer = new SensorSnifferPane(uiContext, getConfig().getRoot().getChild("sensor_sniffer"));
             tabbedPaneAdd("Sensor Sniffer", sensorSniffer.getPanel(), sensorSniffer.getTabSelectedListener());
+        }
+
+        if (!linkManager.isLogViewer()) {
+            KnockPane knockPane = new KnockPane(uiContext, getConfig().getRoot().getChild("knock"));
+            tabbedPaneAdd("Knock", knockPane.getPanel(), knockPane.getTabSelectedListener());
         }
 
 //        tabbedPane.addTab("LE controls", new FlexibleControls().getPanel());

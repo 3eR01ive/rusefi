@@ -7,8 +7,26 @@
 
 #if EFI_SOFTWARE_KNOCK
 
+#include "development/knock_spectrogramm.h"
 #include "knock_config.h"
 #include "ch.hpp"
+
+#include <complex>
+
+typedef float real_type;
+typedef std::complex<real_type> complex_type;
+
+#include "fft/fft.hpp"
+
+//#define sampleFreq 32768 // real 218750
+#define SIZE 512
+static float filteredBuffer[SIZE];
+static complex_type fftBuffer[SIZE];
+static float frequencies[SIZE/2];
+static float amplitudes[SIZE/2];
+static NO_CACHE float sin_data[SIZE];
+static volatile bool sin_data_is_gen = false;
+
 
 static NO_CACHE adcsample_t sampleBuffer[2000];
 static int8_t currentCylinderNumber = 0;
@@ -110,6 +128,25 @@ static const ADCConversionGroup* getConversionGroup(uint8_t channelIdx) {
 	return &adcConvGroupCh1;
 }
 
+static float* gen_data(int size, float* x) {
+
+    //std::srand(std::time(nullptr));
+
+    const double dt = 1.0/KNOCK_SAMPLE_RATE;
+
+	int random_adder = 0;//1 + std::rand() / ((RAND_MAX + 1u) / 300);
+
+	int f1 = 8125 + random_adder;
+	int f2 = 15350 + random_adder;
+
+	for (std::size_t i = 0; i < size; ++i)
+	{
+		x[i] = 32*std::sin(2*M_PI*f1*i*dt) + 8*std::sin(2*M_PI*f2*i*dt + 0.75*M_PI);
+	}
+
+    return x;
+}
+
 void onStartKnockSampling(uint8_t cylinderNumber, float samplingSeconds, uint8_t channelIdx) {
 	if (!engineConfiguration->enableSoftwareKnock) {
 		return;
@@ -125,6 +162,11 @@ void onStartKnockSampling(uint8_t cylinderNumber, float samplingSeconds, uint8_t
 	// If there's pending processing, skip this event
 	if (knockNeedsProcess) {
 		return;
+	}
+
+	if(!sin_data_is_gen) {
+		gen_data(SIZE, sin_data); // xxxx
+		sin_data_is_gen = true;
 	}
 
 	// Convert sampling time to number of samples
@@ -153,6 +195,8 @@ void initSoftwareKnock() {
 	if (engineConfiguration->enableSoftwareKnock) {
 		knockFilter.configureBandpass(KNOCK_SAMPLE_RATE, 1000 * engineConfiguration->knockBandCustom, 3);
 		adcStart(&KNOCK_ADC, nullptr);
+
+		initKnockSpectrogramm();
 
   // fun fact: we do not offer any ADC channel flexibility like we have for many other kinds of inputs
 		efiSetPadMode("knock ch1", KNOCK_PIN_CH1, PAL_MODE_INPUT_ANALOG);
@@ -190,8 +234,21 @@ static void processLastKnockEvent() {
 			engine->outputChannels.debugFloatField2 = filtered;
 		}
 
+		if(i < SIZE) {
+			filteredBuffer[i] = volts * volts;
+		}
+
 		sumSq += filtered * filtered;
 	}
+
+
+	fft::fft(sin_data, fftBuffer, SIZE);
+    fft::fft_freq(frequencies, SIZE, KNOCK_SAMPLE_RATE);
+	fft::fft_amp(fftBuffer, amplitudes, SIZE);
+
+	float main_freq = fft::get_main_freq(amplitudes, frequencies, SIZE / 2);
+
+	knockSpectorgrammAddLine(amplitudes, SIZE / 2);
 
 	// take a local copy
 	auto lastKnockTime = lastKnockSampleTime;
@@ -208,7 +265,7 @@ static void processLastKnockEvent() {
 	// clamp to reasonable range
 	db = clampF(-100, db, 100);
 
-	engine->module<KnockController>()->onKnockSenseCompleted(currentCylinderNumber, db, lastKnockTime);
+	engine->module<KnockController>()->onKnockSenseCompleted(currentCylinderNumber, db, main_freq, lastKnockTime);
 }
 
 void KnockThread::ThreadTask() {

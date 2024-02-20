@@ -84,6 +84,7 @@ extern WaveChart waveChart;
 #endif /* EFI_ENGINE_SNIFFER */
 
 #include "sensor_chart.h"
+#include "knock_spectrogramm.h"
 
 extern int maxTriggerReentrant;
 extern uint32_t maxLockedDuration;
@@ -159,6 +160,7 @@ void printOverallStatus() {
 	publishSensorChartIfFull();
 #endif // EFI_SENSOR_CHART
 
+	publishKnockSpectrogrammIfFull();
 	/**
 	 * we report the version every second - this way the console does not need to
 	 * request it and we will display it pretty soon
