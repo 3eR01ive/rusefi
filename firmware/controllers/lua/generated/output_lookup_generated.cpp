@@ -871,6 +871,9 @@ float getOutputValueByName(const char *name) {
 // m_maximumRetard
 		case 164334513:
 			return ___engine.module<KnockController>()->m_maximumRetard;
+// m_knockFrequency
+		case -249826215:
+			return ___engine.module<KnockController>()->m_knockFrequency;
 // isTpsInvalid
 #if EFI_BOOST_CONTROL
 		case -575666209:

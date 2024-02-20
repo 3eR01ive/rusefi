@@ -1609,6 +1609,7 @@ gaugeCategory = Knock
 	knockLevelGauge = m_knockLevel,"Knock level", "dBv", -60, 10, -60, -60, 10, 10, 0, 0
 	knockRetardGauge = m_knockRetard, "Knock retard", "deg", 0, 10, 0, 0, 10, 10, 1, 1
 	knockCountGauge = m_knockCount, "Knock count", "count", 0, 10000, 0, 0, 10000, 10000, 0, 0
+	knockFrequency = m_knockFrequency, "Knock freq", "Hz", 0, 10000, 0, 0, 10000, 10000, 0, 0
 
 gaugeCategory = DynoView
 	accelGauge = VssAcceleration, "Vehicle acceleration",	"m/s2",		-10,	10,		-6,	-4,		4,	6,	2,	2

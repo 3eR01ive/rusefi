@@ -376,6 +376,7 @@ static const LogField fields[] = {
 	{___engine.module<KnockController>()->m_knockThreshold, "Knock: Threshold", "", 0},
 	{___engine.module<KnockController>()->m_knockCount, "Knock: Count", "", 0},
 	{___engine.module<KnockController>()->m_maximumRetard, "Knock: Max retard", "", 0},
+	{___engine.module<KnockController>()->m_knockFrequency, "knock: frequency", "Hz", 2},
 #if EFI_BOOST_CONTROL
 	{___engine.module<BoostController>()->luaTargetAdd, "Boost: Lua target add", "v", 1, "Boost Control"},
 #endif
