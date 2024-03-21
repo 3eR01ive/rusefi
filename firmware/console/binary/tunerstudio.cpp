@@ -74,6 +74,7 @@
 #include "bluetooth.h"
 #include "tunerstudio_io.h"
 #include "trigger_scope.h"
+#include "software_knock.h"
 #include "electronic_throttle.h"
 #include "live_data.h"
 
@@ -743,6 +744,26 @@ int TunerStudio::handleCrcCommand(TsChannelBase* tsChannel, char *data, int inco
 				}
 			}
 			break;
+#ifdef KNOCK_SPECTROGRAM
+		case TS_KNOCK_SPECTROGRAM_ENABLE:
+			knockSpectrogramEnable();
+			break;
+		case TS_KNOCK_SPECTROGRAM_DISABLE:
+			knockSpectrogramDisable();
+			break;
+		case TS_KNOCK_SPECTROGRAM_READ:
+			{
+				const auto& buffer = knockSpectrogramGetBuffer();
+
+				if (buffer) {
+					tsChannel->sendResponse(TS_CRC, buffer.get<uint8_t>(), buffer.size(), true);
+				} else {
+					// TS asked for a tooth logger buffer, but we don't have one to give it.
+					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
+				}
+			}
+			break;
+#endif // KNOCK_SPECTROGRAM			
 #ifdef TRIGGER_SCOPE
 		case TS_TRIGGER_SCOPE_ENABLE:
 			triggerScopeEnable();

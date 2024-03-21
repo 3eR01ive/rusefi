@@ -1487,7 +1487,7 @@
 #define ts_show_vr_threshold_2 false
 #define ts_show_vr_threshold_all false
 #define ts_show_vr_threshold_pins true
-#define TS_SIGNATURE "rusEFI master.2024.03.21.proteus_f4.438748110"
+#define TS_SIGNATURE "rusEFI master.2024.03.21.proteus_f4_knock_analyzer.438748110"
 #define TS_SIMULATE_CAN '>'
 #define TS_SIMULATE_CAN_char >
 #define TS_SINGLE_WRITE_COMMAND 'W'
