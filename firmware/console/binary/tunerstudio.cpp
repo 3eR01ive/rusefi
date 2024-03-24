@@ -356,6 +356,8 @@ static bool isKnownCommand(char command) {
 			|| command == TS_GET_TEXT
 			|| command == TS_CRC_CHECK_COMMAND
 			|| command == TS_GET_FIRMWARE_VERSION
+			|| command == TS_KNOCK_SPECTROGRAM_ENABLE
+			|| command == TS_KNOCK_SPECTROGRAM_DISABLE
 			|| command == TS_PERF_TRACE_BEGIN
 			|| command == TS_PERF_TRACE_GET_BUFFER
 			|| command == TS_GET_CONFIG_ERROR
@@ -722,91 +724,71 @@ int TunerStudio::handleCrcCommand(TsChannelBase* tsChannel, char *data, int inco
 		}
 		break;
 #if EFI_TOOTH_LOGGER
-	case TS_SET_LOGGER_SWITCH:
-		switch(data[0]) {
-		case TS_COMPOSITE_ENABLE:
-			EnableToothLogger();
-			break;
-		case TS_COMPOSITE_DISABLE:
-			DisableToothLogger();
-			break;
-		case TS_COMPOSITE_READ:
-			{
-				auto toothBuffer = GetToothLoggerBufferNonblocking();
+// 	case TS_SET_LOGGER_SWITCH:
+// 		switch(data[0]) {
+// 		case TS_COMPOSITE_ENABLE:
+// 			EnableToothLogger();
+// 			break;
+// 		case TS_COMPOSITE_DISABLE:
+// 			DisableToothLogger();
+// 			break;
+// 		case TS_COMPOSITE_READ:
+// 			{
+// 				auto toothBuffer = GetToothLoggerBufferNonblocking();
 
-				if (toothBuffer) {
-					tsChannel->sendResponse(TS_CRC, reinterpret_cast<const uint8_t*>(toothBuffer->buffer), toothBuffer->nextIdx * sizeof(composite_logger_s), true);
+// 				if (toothBuffer) {
+// 					tsChannel->sendResponse(TS_CRC, reinterpret_cast<const uint8_t*>(toothBuffer->buffer), toothBuffer->nextIdx * sizeof(composite_logger_s), true);
 
-					ReturnToothLoggerBuffer(toothBuffer);
-				} else {
-					// TS asked for a tooth logger buffer, but we don't have one to give it.
-					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
-				}
-			}
-			break;
-#ifdef KNOCK_SPECTROGRAM
-		case TS_KNOCK_SPECTROGRAM_ENABLE:
-			knockSpectrogramEnable();
-			break;
-		case TS_KNOCK_SPECTROGRAM_DISABLE:
-			knockSpectrogramDisable();
-			break;
-		case TS_KNOCK_SPECTROGRAM_READ:
-			{
-				const auto& buffer = knockSpectrogramGetBuffer();
+// 					ReturnToothLoggerBuffer(toothBuffer);
+// 				} else {
+// 					// TS asked for a tooth logger buffer, but we don't have one to give it.
+// 					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
+// 				}
+// 			}
+// 			break;		
+// #ifdef TRIGGER_SCOPE
+// 		case TS_TRIGGER_SCOPE_ENABLE:
+// 			triggerScopeEnable();
+// 			break;
+// 		case TS_TRIGGER_SCOPE_DISABLE:
+// 			triggerScopeDisable();
+// 			break;
+// 		case TS_TRIGGER_SCOPE_READ:
+// 			{
+// 				const auto& buffer = triggerScopeGetBuffer();
 
-				if (buffer) {
-					tsChannel->sendResponse(TS_CRC, buffer.get<uint8_t>(), buffer.size(), true);
-				} else {
-					// TS asked for a tooth logger buffer, but we don't have one to give it.
-					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
-				}
-			}
-			break;
-#endif // KNOCK_SPECTROGRAM			
-#ifdef TRIGGER_SCOPE
-		case TS_TRIGGER_SCOPE_ENABLE:
-			triggerScopeEnable();
-			break;
-		case TS_TRIGGER_SCOPE_DISABLE:
-			triggerScopeDisable();
-			break;
-		case TS_TRIGGER_SCOPE_READ:
-			{
-				const auto& buffer = triggerScopeGetBuffer();
+// 				if (buffer) {
+// 					tsChannel->sendResponse(TS_CRC, buffer.get<uint8_t>(), buffer.size(), true);
+// 				} else {
+// 					// TS asked for a tooth logger buffer, but we don't have one to give it.
+// 					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
+// 				}
+// 			}
+// 			break;
+// #endif // TRIGGER_SCOPE
+// 		default:
+// 			// dunno what that was, send NAK
+// 			return false;
+// 		}
 
-				if (buffer) {
-					tsChannel->sendResponse(TS_CRC, buffer.get<uint8_t>(), buffer.size(), true);
-				} else {
-					// TS asked for a tooth logger buffer, but we don't have one to give it.
-					sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
-				}
-			}
-			break;
-#endif // TRIGGER_SCOPE
-		default:
-			// dunno what that was, send NAK
-			return false;
-		}
-
-		sendOkResponse(tsChannel, TS_CRC);
+// 		sendOkResponse(tsChannel, TS_CRC);
 
 		break;
 	case TS_GET_COMPOSITE_BUFFER_DONE_DIFFERENTLY:
-		{
-			EnableToothLoggerIfNotEnabled();
+		// {
+		// 	EnableToothLoggerIfNotEnabled();
 
-			auto toothBuffer = GetToothLoggerBufferNonblocking();
+		// 	auto toothBuffer = GetToothLoggerBufferNonblocking();
 
-			if (toothBuffer) {
-				tsChannel->sendResponse(TS_CRC, reinterpret_cast<const uint8_t*>(toothBuffer->buffer), toothBuffer->nextIdx * sizeof(composite_logger_s), true);
+		// 	if (toothBuffer) {
+		// 		tsChannel->sendResponse(TS_CRC, reinterpret_cast<const uint8_t*>(toothBuffer->buffer), toothBuffer->nextIdx * sizeof(composite_logger_s), true);
 
-				ReturnToothLoggerBuffer(toothBuffer);
-			} else {
-				// TS asked for a tooth logger buffer, but we don't have one to give it.
-				sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
-			}
-		}
+		// 		ReturnToothLoggerBuffer(toothBuffer);
+		// 	} else {
+		// 		// TS asked for a tooth logger buffer, but we don't have one to give it.
+		// 		sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
+		// 	}
+		// }
 
 		break;
 #else // EFI_TOOTH_LOGGER
@@ -814,16 +796,24 @@ int TunerStudio::handleCrcCommand(TsChannelBase* tsChannel, char *data, int inco
 		sendErrorCode(tsChannel, TS_RESPONSE_OUT_OF_RANGE);
 		break;
 #endif /* EFI_TOOTH_LOGGER */
+#ifdef KNOCK_SPECTROGRAM
+	case TS_KNOCK_SPECTROGRAM_ENABLE:
+		knockSpectrogramEnable();
+		break;
+	case TS_KNOCK_SPECTROGRAM_DISABLE:
+		knockSpectrogramDisable();
+		break;
+#endif // KNOCK_SPECTROGRAM	
 #if ENABLE_PERF_TRACE
 	case TS_PERF_TRACE_BEGIN:
-		perfTraceEnable();
-		sendOkResponse(tsChannel, TS_CRC);
+		// perfTraceEnable();
+		// sendOkResponse(tsChannel, TS_CRC);
 		break;
 	case TS_PERF_TRACE_GET_BUFFER:
-		{
-			auto trace = perfTraceGetBuffer();
-			tsChannel->sendResponse(TS_CRC, trace.get<uint8_t>(), trace.size(), true);
-		}
+		// {
+		// 	auto trace = perfTraceGetBuffer();
+		// 	tsChannel->sendResponse(TS_CRC, trace.get<uint8_t>(), trace.size(), true);
+		// }
 
 		break;
 #endif /* ENABLE_PERF_TRACE */

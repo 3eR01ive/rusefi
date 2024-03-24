@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <math.h>
+#include <vector>
 #include <complex>
 
 namespace fft {

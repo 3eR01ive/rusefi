@@ -1148,7 +1148,7 @@ int16_t tps2Max;Full throttle#2. tpsMax value as 10 bit ADC value. Not Voltage!\
 	bit mc33810Gpgd2Mode
 	bit mc33810Gpgd3Mode
 	bit enableExtendedCanBroadcast
-	bit unusedBit_495_6
+	bit enableKnockSpectrogram
 	bit unusedBit_495_7
 	bit unusedBit_495_8
 	bit unusedBit_495_9
@@ -2205,6 +2205,10 @@ end_struct
 #define TS_PERF_TRACE_BEGIN '_'
 #define TS_PERF_TRACE_GET_BUFFER 'b'
 
+! knock analyzer
+#define TS_KNOCK_SPECTROGRAM_ENABLE 'm'
+#define TS_KNOCK_SPECTROGRAM_DISABLE 'n'
+
 ! 0x50 80
 #define TS_PAGE_COMMAND 'P'
 ! 0x46
@@ -2247,10 +2251,6 @@ end_struct
 #define TS_TRIGGER_SCOPE_ENABLE 4
 #define TS_TRIGGER_SCOPE_DISABLE 5
 #define TS_TRIGGER_SCOPE_READ 6
-
-#define TS_KNOCK_SPECTROGRAM_ENABLE 7
-#define TS_KNOCK_SPECTROGRAM_DISABLE 8
-#define TS_KNOCK_SPECTROGRAM_READ 9
 
 ! Generic channel names, your board may want to override these
 #define TS_TRIGGER_SCOPE_CHANNEL_1_NAME "Channel 1"

@@ -12,25 +12,23 @@
 
 #ifdef KNOCK_SPECTROGRAM
 #include "development/knock_spectrogram.h"
-#include "fft/fft.hpp"
+#include "fft/fft.h"
 
-#define SIZE 256
-class SpectrogramData {
-public:
+#define SIZE 512
+
+struct SpectrogramData {
 	float filteredBuffer[SIZE];
-	complex_type fftBuffer[SIZE];
 	float frequencies[SIZE/2];
 	float amplitudes[SIZE/2];
+	fft::complex_type fftBuffer[SIZE];
 };
 
-static SpectrogramData* spectrogramData = nullptr;
+//static NO_CACHE SpectrogramData spectrogramData0;
+static SpectrogramData* spectrogramData = nullptr;//&spectrogramData0;
 static BigBufferHandle buffer;
 #endif //KNOCK_SPECTROGRAM
 
-// static NO_CACHE float sin_data[SIZE];
-// static volatile bool sin_data_is_gen = false;
 
-//static NO_CACHE float values[2000];
 static NO_CACHE adcsample_t sampleBuffer[2000];
 static int8_t currentCylinderNumber = 0;
 static efitick_t lastKnockSampleTime = 0;
@@ -195,6 +193,7 @@ void initSoftwareKnock() {
 
 #ifdef KNOCK_SPECTROGRAM
 		initKnockSpectrogram();
+		knockSpectrogramEnable();
 #endif
 
   // fun fact: we do not offer any ADC channel flexibility like we have for many other kinds of inputs
@@ -233,16 +232,18 @@ static void processLastKnockEvent() {
 			engine->outputChannels.debugFloatField2 = filtered;
 		}
 
-		// if(i < SIZE && engineConfiguration->enableKnockSpectrogram) {
-		// 	spectrogramData->filteredBuffer[i] = volts;
-		// }
-
-		//values[i] = volts;
+		#ifdef KNOCK_SPECTROGRAM
+		if(i < SIZE && engineConfiguration->enableKnockSpectrogram) {
+			spectrogramData->filteredBuffer[i] = volts;
+		}
+		#endif
 
 		sumSq += filtered * filtered;
 	}
 
-	//gen_data(SIZE, sin_data);
+	if(engineConfiguration->enableKnockSpectrogram) {
+		//gen_data(SIZE, spectrogramData->filteredBuffer);
+	}
 
 	// take a local copy
 	auto lastKnockTime = lastKnockSampleTime;
@@ -252,17 +253,15 @@ static void processLastKnockEvent() {
 
 	float mainFreq = 0.f;
 
-	//knockSpectorgramAddLine(mainFreq, values, 2000);
-
 	#ifdef KNOCK_SPECTROGRAM
 	if(engineConfiguration->enableKnockSpectrogram) {
-		constexpr float ratio = 3.3f / 4095.0f;
+		//constexpr float ratio = 3.3f / 4095.0f;
 
-		//fft::fft(sampleBuffer, spectrogramData->fftBuffer, SIZE);
-		fft::fft_adc_sample(ratio, sampleBuffer, spectrogramData->fftBuffer, SIZE);
+		fft::fft(spectrogramData->filteredBuffer, spectrogramData->fftBuffer, SIZE);
+		//fft::fft_adc_sample(ratio, sampleBuffer, spectrogramData->fftBuffer, SIZE);
 		fft::fft_freq(spectrogramData->frequencies, SIZE, KNOCK_SAMPLE_RATE); //samples per sec 218750
 		fft::fft_amp(spectrogramData->fftBuffer, spectrogramData->amplitudes, SIZE);
-		fft::fft_db(spectrogramData->amplitudes, SIZE);
+		//fft::fft_db(spectrogramData->amplitudes, SIZE);
 
 		float mainFreq = fft::get_main_freq(spectrogramData->amplitudes, spectrogramData->frequencies, SIZE / 2);
 
@@ -309,10 +308,11 @@ void knockSpectrogramEnable() {
 
 void knockSpectrogramDisable() {
 	chibios_rt::CriticalSectionLocker csl;
+	engineConfiguration->enableKnockSpectrogram = false;
+
 	// we're done with the buffer - let somebody else have it
 	buffer = {};
 	spectrogramData = nullptr;
-	engineConfiguration->enableKnockSpectrogram = false;
 }
 
 const BigBufferHandle& knockSpectrogramGetBuffer() {

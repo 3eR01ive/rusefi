@@ -1,9 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <math.h>
-#include <vector>
-
 namespace fft {
 
 #ifndef M_PI

@@ -12,9 +12,9 @@
 #include "knock_spectrogram.h"
 #include <climits>
 
-#if EFI_TEXT_LOGGING //128
-static char LOGGING_BUFFER[128] CCM_OPTIONAL;
-static Logging scLogging("knock_spectrogram", LOGGING_BUFFER, sizeof(LOGGING_BUFFER));
+#if EFI_TEXT_LOGGING
+static char PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER[128] CCM_OPTIONAL;
+static Logging scLogging("knock_spectrogram", PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER, sizeof(PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER));
 #endif /* EFI_TEXT_LOGGING */
 
 static int initialized = false;
@@ -52,7 +52,7 @@ void base64(Logging& l, const float* data, size_t size, const float& min, const 
 	}
 	if (i < in_len) {
 		l.appendChar(encTable[(compressToByte(data[i], min, max) >> 2) & 0x3F]);
-		
+
 		if (i == (in_len - 1)) {
 			l.appendChar(encTable[((compressToByte(data[i], min, max) & 0x3) << 4)]);
 			l.appendChar('=');
@@ -97,7 +97,7 @@ void knockSpectorgramAddLine(float main_freq, float* data, size_t size) {
 		scLogging.appendChar((char)size);
 
 		base64(scLogging, data, size, min, max);
-	
+
 		scLogging.append(LOG_DELIMITER);
 
 		scheduleLogging(&scLogging);

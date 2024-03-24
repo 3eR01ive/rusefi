@@ -2,9 +2,11 @@ package com.rusefi.ui.knock;
 
 import com.devexperts.logging.Logging;
 import com.rusefi.FileLog;
+import com.rusefi.binaryprotocol.BinaryProtocol;
 import com.rusefi.config.generated.Fields;
 import com.rusefi.core.EngineState;
 import com.rusefi.core.preferences.storage.Node;
+import com.rusefi.tools.ConsoleTools;
 import com.rusefi.ui.RpmLabel;
 import com.rusefi.ui.RpmModel;
 import com.rusefi.ui.UIContext;
@@ -20,16 +22,14 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Random;
 import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.devexperts.logging.Logging.getLogging;
-import static java.lang.Math.log;
-
-import org.bytedeco.javacpp.*;
+import static com.rusefi.tools.ConsoleTools.startAndConnect;
 import static java.lang.Math.*;
-import static org.bytedeco.fftw.global.fftw3.*;
 
 /**
  * Date: 20/02/24
@@ -79,7 +79,7 @@ public class KnockPane {
                 canvas.processValues(value);
               /*  canvas.invalidate();
                 canvas.validate();*/
-                canvas.repaint();
+                //canvas.repaint();
             }
         });
 
@@ -97,7 +97,46 @@ public class KnockPane {
         });
         upperPanel.add(clearButton);
 
-        upperPanel.add(new BoolConfigField(uiContext, Fields.ENABLEKNOCKSPECTROGRAM, "enable spectrogram").getContent());
+		JButton enableButton = UiUtils.createClearButton();
+        enableButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                UiUtils.trueRepaint(canvas);
+
+                /*uiContext.getLinkManager().submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
+                        //latch.countDown();
+                        BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
+                        binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_ENABLE, "start knock analyzer");
+                    }
+                });*/
+            }
+        });
+        upperPanel.add(enableButton);
+
+		JButton disableButton = UiUtils.createClearButton();
+        disableButton.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                UiUtils.trueRepaint(canvas);
+
+                /*uiContext.getLinkManager().submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
+                        //latch.countDown();
+                        BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
+                        binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_DISABLE, "start knock analyzer");
+                    }
+                });*/
+            }
+        });
+        upperPanel.add(disableButton);
+
+
+        //upperPanel.add(new BoolConfigField(uiContext, Fields.ENABLEKNOCKSPECTROGRAM, "enable spectrogram").getContent());
 
         JButton saveImageButton = UiUtils.createSaveImageButton();
         upperPanel.add(saveImageButton);
@@ -170,81 +209,11 @@ public class KnockPane {
 
 
         JComponent dd = this;
-
-        static final int NUM_POINTS = 512;
-
-
-        DoublePointer signal = new DoublePointer(2 * NUM_POINTS);
-        DoublePointer result = new DoublePointer(2 * NUM_POINTS);
-
-        static final int REAL = 0;
-        static final int IMAG = 1;
-
-        static void acquire_from_somewhere(DoublePointer signal) {
-            /* Generate two sine waves of different frequencies and amplitudes. */
-
-            double[] s = new double[(int)signal.capacity()];
-            for (int i = 0; i < NUM_POINTS; i++) {
-                double theta = (double)i / (double)NUM_POINTS * PI;
-
-                s[2 * i + REAL] = 1.0 * cos(10.0 * theta) +
-                    0.5 * cos(25.0 * theta);
-
-                s[2 * i + IMAG] = 1.0 * sin(10.0 * theta) +
-                    0.5 * sin(25.0 * theta);
-            }
-            signal.put(s);
-        }
-
-        static void do_something_with(DoublePointer result) {
-            double[] r = new double[(int)result.capacity()];
-            result.get(r);
-            for (int i = 0; i < NUM_POINTS; i++) {
-                double mag = sqrt(r[2 * i + REAL] * r[2 * i + REAL] +
-                    r[2 * i + IMAG] * r[2 * i + IMAG]);
-
-                System.out.println(mag);
-            }
-        }
-
-        public void spectr(Graphics g) {
-            //Loader.load(org.bytedeco.fftw.global.fftw3.class);
-
-            fftw_plan plan = fftw_plan_dft_1d(NUM_POINTS, signal, result, FFTW_FORWARD, (int)FFTW_ESTIMATE);
-
-            acquire_from_somewhere(signal);
-            fftw_execute(plan);
-            //do_something_with(result);
-
-
-            double[] r = new double[(int)result.capacity()];
-            for(int i = 0; i < spectrogramYAxisSize; ++i) {
-                result.get(r);
-
-                double mag = sqrt(r[2 * i + REAL] * r[2 * i + REAL] +
-                    r[2 * i + IMAG] * r[2 * i + IMAG]);
-
-                specrtogram[currentIndexXAxis][i] = (float)mag;
-            }
-
-            //log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
-
-            ++currentIndexXAxis;
-
-            if(currentIndexXAxis >= SPECTROGRAM_X_AXIS_SIZE){
-                currentIndexXAxis = 0;
-            }
-
-            fftw_destroy_plan(plan);
-
-            drawSpectrum();
-        }
-
         //--------------------------------------
 
         private BufferedImage bufferedImage;
         private Graphics2D bufferedGraphics;
-        static int SPECTROGRAM_X_AXIS_SIZE = 200;
+        static int SPECTROGRAM_X_AXIS_SIZE = 1024;
         float[][] specrtogram;
         float mainFrequency = 0;
         Color[] colorspace;
@@ -267,7 +236,7 @@ public class KnockPane {
                 }
             });
 
-            bufferedImage = new BufferedImage(640*4,480*4, BufferedImage.TYPE_INT_RGB);
+            bufferedImage = new BufferedImage(640,480, BufferedImage.TYPE_INT_RGB);
             bufferedGraphics = bufferedImage.createGraphics();
             this.addComponentListener(this);
 
@@ -318,7 +287,7 @@ public class KnockPane {
 
             String compressed = first_split[1];
             char sizec = compressed.charAt(0);
-            int size = (int)sizec;
+            int size_data = (int)sizec;
 
             char base64Size = compressed.charAt(1);
             int b64size = (int)base64Size;
@@ -327,10 +296,11 @@ public class KnockPane {
 
             byte[] data = Base64.getDecoder().decode(base64);
 
-            assert size == compressed.length() - 1;
+            assert size_data == compressed.length() - 1;
+            assert size_data == yAxisHz.length;
 
             if(compressed.length() - 1 < spectrogramYAxisSize){
-                //log.error("data size error: " + compressed.length());
+                log.error("data size error: " + compressed.length());
                 return;
             }
 
@@ -339,8 +309,71 @@ public class KnockPane {
                 byte c = data[i];
                 int k = c + 128;
 
-                specrtogram[currentIndexXAxis][i] = c;
+                specrtogram[currentIndexXAxis][i] = k;
             }
+
+            Dimension size = getSize();
+            int width = bufferedImage.getWidth();//size.width;
+            int height = bufferedImage.getHeight();//size.height;
+
+            float bx = (float)width / (float)SPECTROGRAM_X_AXIS_SIZE;
+
+            float min = Integer.MAX_VALUE;
+            float max = 0;
+            for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
+                for(int y = 0; y < spectrogramYAxisSize; ++y) {
+                    float value = specrtogram[x][y];
+                    if(value < min) {
+                        min = value;
+                    }
+
+                    if(value > max) {
+                        max = value;
+                    }
+                }
+            }
+
+            for(int y = 0; y < spectrogramYAxisSize; ++y)
+            {
+                float value = specrtogram[currentIndexXAxis][y];
+                double lvalue = value;
+                double lmin = min;
+                double lmax = max;
+
+                double normalized = 0;
+                if((lmax-lmin) != 0) {
+                    normalized = (lvalue-lmin)/(lmax-lmin);
+                }
+
+                if(normalized > 1)
+                {
+                    normalized = 1.0;
+                }
+
+                if(normalized < 0)
+                {
+                    normalized = 0.0;
+                }
+
+                //int color_index = (int)((colorspace.length - 1) * (float)random()); //for test
+                int color_index = (int)((colorspace.length-1) * normalized);
+
+                Color color = colorspace[color_index];
+
+                colors[(spectrogramYAxisSize-1) - y] = color;
+                amplitudesInColorSpace[y] = ((float)y) / (float) spectrogramYAxisSize;
+            }
+
+            LinearGradientPaint lgp = new LinearGradientPaint(
+                new Point2D.Float(0, 0),
+                new Point2D.Float(0, height),
+                amplitudesInColorSpace,
+                colors
+            );
+
+            bufferedGraphics.setPaint(lgp);
+
+            bufferedGraphics.fillRect((int)(currentIndexXAxis * bx), 0, (int)bx, height);
 
             //log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
 
@@ -411,13 +444,13 @@ public class KnockPane {
                 return;
             }*/
 
-            Dimension size = getSize();
+          /*  Dimension size = getSize();
             int width = size.width;
             int height = size.height;
 
-            int bx = width / SPECTROGRAM_X_AXIS_SIZE;
+            int bx = width / SPECTROGRAM_X_AXIS_SIZE;*/
 
-            float min = Integer.MAX_VALUE;
+         /*   float min = Integer.MAX_VALUE;
             float max = 0;
             for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
                 for(int y = 0; y < spectrogramYAxisSize; ++y) {
@@ -431,14 +464,14 @@ public class KnockPane {
                     }
                 }
             }
-
-            for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
+*/
+  /*          for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
 
                 for(int y = 0; y < spectrogramYAxisSize; ++y) {
                     float value = specrtogram[x][y];
-                    double lvalue = value; //(1 + value*value);
-                    double lmin = min;//(1 + min*min);
-                    double lmax = max;//(1 + max*max);
+                    double lvalue = (1 + value*value);
+                    double lmin = (1 + min*min);
+                    double lmax = (1 + max*max);
 
                     double normalized = 0;
                     if((lmax-lmin) != 0) {
@@ -465,7 +498,12 @@ public class KnockPane {
                 bufferedGraphics.setPaint(lgp);
 
                 bufferedGraphics.fillRect(x * bx, 0, bx, height);
-            }
+            }*/
+
+/*            bufferedGraphics.setColor(Color.RED);
+            var line = currentIndexXAxis * bx;
+            bufferedGraphics.drawLine(line, 0, line, height);
+
 
             for(int i = 0; i < yAxisHz.length; ++i) {
 
@@ -483,22 +521,53 @@ public class KnockPane {
 
             bufferedGraphics.setColor(Color.WHITE);
             var yy = hzToYScreen(mainFrequency, height);
-            bufferedGraphics.fillRect(0, yy, width, 1);
+            bufferedGraphics.fillRect(0, yy, width, 1);*/
         }
 
         @Override
         public void paint(Graphics g) {
             super.paint(g);
 
-            spectr(g);
+            Dimension size = getSize();
 
             // flip buffers
-            g.drawImage(bufferedImage, 0, 0, null);
+            g.drawImage(bufferedImage, 0, 0, size.width, size.height,null);
+            //g.setColor(Color.RED);
+            //g.drawRect(0, 0, size.width, size.height);
 
-            /* for test
-            var yy2 = HzToYscreen(8117.68, height);
-            g2.fillRect(0, yy2, width, 1);
-            */
+
+            int width = bufferedImage.getWidth();//size.width;
+            int height = bufferedImage.getHeight();//size.height;
+
+            float bx = (float)width / (float)SPECTROGRAM_X_AXIS_SIZE;
+
+            g.setColor(Color.RED);
+            int line = (int)(currentIndexXAxis * bx);
+            g.drawLine(line, 0, line, height);
+
+
+            for(int i = 0; i < yAxisHz.length; ++i) {
+
+                var y= hzToYScreen(yAxisHz[i], height);
+
+                g.setColor(Color.WHITE);
+                g.fillRect(0, y, 30, 3);
+            }
+
+            Font f = g.getFont();
+            g.setFont(new Font(f.getName(), Font.BOLD, g.getFont().getSize() * 10));
+            g.setColor(Color.RED);
+            g.drawString(Float.valueOf(mainFrequency).toString() + " Hz", width/2,  100);
+            g.setFont(f);
+
+            g.setColor(Color.WHITE);
+            var yy = hzToYScreen(mainFrequency, height);
+            g.fillRect(0, yy, width, 1);
+
+            //for test
+            //var yy2 = hzToYScreen(8117.68, height);
+            //g.fillRect(0, yy2, width, 1);
+
         }
 
         @Override
