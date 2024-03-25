@@ -87,8 +87,7 @@ static bool ffti(complex_type* data, const size_t size)
 
 bool fft_adc_sample(float ratio, const short unsigned int* data_in, complex_type* data_out, const size_t size)
 {
-	int s = static_cast<int>(size);
-    for(int i = 0; i < s; ++i) {
+    for(size_t i = 0; i < size; ++i) {
         data_out[i] = complex_type(ratio * data_in[i], 0.0);
     }
 
@@ -97,8 +96,7 @@ bool fft_adc_sample(float ratio, const short unsigned int* data_in, complex_type
 
 bool fft(const real_type* data_in, complex_type* data_out, const size_t size)
 {
-    int s = static_cast<int>(size);
-    for(int i = 0; i < s; ++i) {
+    for(size_t i = 0; i < size; ++i) {
         data_out[i] = complex_type(data_in[i], 0.0);
     }
 
@@ -107,7 +105,7 @@ bool fft(const real_type* data_in, complex_type* data_out, const size_t size)
 
 void fft_freq(real_type* freq, const size_t size, const size_t sampleFreq)
 {
-    for (int i = 0; i < size/2; i++)
+    for (size_t i = 0; i < size/2; i++)
     {
         freq[i] = ((real_type)i * sampleFreq) / size;
     }
@@ -115,7 +113,7 @@ void fft_freq(real_type* freq, const size_t size, const size_t sampleFreq)
 
 void fft_amp(const complex_type* fft_data, real_type* amplitude, const size_t size)
 {
-    for (std::size_t i = 0; i < size/2; ++i)
+    for (size_t i = 0; i < size/2; ++i)
     {
         amplitude[i] = abs(fft_data[i].imag());
     }
@@ -123,7 +121,7 @@ void fft_amp(const complex_type* fft_data, real_type* amplitude, const size_t si
 
 void fft_db(real_type* amplitude, const size_t size)
 {
-    for (std::size_t i = 0; i < size/2; ++i)
+    for (size_t i = 0; i < size/2; ++i)
     {
         amplitude[i] = log10(amplitude[i]) * 10;
     }
@@ -186,12 +184,12 @@ void blackmanharris(float * w, unsigned n, bool sflag)
     cosine_window(w, n, coeff, sizeof(coeff) / sizeof(float), sflag);
 }
 
-float get_main_freq(float* amplitudes, float* frequencies, int size)
+float get_main_freq(float* amplitudes, float* frequencies, size_t size)
 {
     float peaks_amp = 0;
     size_t peaks_index = 0;
 
-    for (std::size_t i = 0; i < size; ++i)
+    for (size_t i = 0; i < size; ++i)
     {
         float amp = amplitudes[i];
         if(amp > peaks_amp) {

@@ -79,31 +79,22 @@ public class KnockPane {
                 canvas.processValues(value);
               /*  canvas.invalidate();
                 canvas.validate();*/
-                //canvas.repaint();
+                canvas.repaint();
             }
         });
 
 
         final JPanel upperPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        final JButton pauseButton = UiUtils.createPauseButton();
 
-        JButton clearButton = UiUtils.createClearButton();
-        clearButton.addActionListener(new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                UiUtils.trueRepaint(canvas);
-                setPaused(pauseButton, false);
-            }
-        });
-        upperPanel.add(clearButton);
+        JButton enableButton = new JButton("start");
+        enableButton.setMnemonic('s');
 
-		JButton enableButton = UiUtils.createClearButton();
         enableButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                UiUtils.trueRepaint(canvas);
+                //UiUtils.trueRepaint(canvas);
 
-                /*uiContext.getLinkManager().submit(new Runnable() {
+                uiContext.getLinkManager().submit(new Runnable() {
                     @Override
                     public void run() {
                         //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
@@ -111,32 +102,31 @@ public class KnockPane {
                         BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
                         binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_ENABLE, "start knock analyzer");
                     }
-                });*/
+                });
             }
         });
         upperPanel.add(enableButton);
 
-		JButton disableButton = UiUtils.createClearButton();
+        JButton disableButton = new JButton("stop");
+        disableButton.setMnemonic('s');
         disableButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                UiUtils.trueRepaint(canvas);
+                //UiUtils.trueRepaint(canvas);
 
-                /*uiContext.getLinkManager().submit(new Runnable() {
+                uiContext.getLinkManager().submit(new Runnable() {
                     @Override
                     public void run() {
                         //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
                         //latch.countDown();
                         BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
-                        binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_DISABLE, "start knock analyzer");
+                        binaryProtocol.executeCommand(Fields.TS_PERF_TRACE_BEGIN, "start knock analyzer");
                     }
-                });*/
+                });
             }
         });
         upperPanel.add(disableButton);
 
-
-        //upperPanel.add(new BoolConfigField(uiContext, Fields.ENABLEKNOCKSPECTROGRAM, "enable spectrogram").getContent());
 
         JButton saveImageButton = UiUtils.createSaveImageButton();
         upperPanel.add(saveImageButton);
@@ -151,20 +141,10 @@ public class KnockPane {
                                       }
         );
 
-        upperPanel.add(pauseButton);
         upperPanel.add(new RpmLabel(uiContext,2).getContent());
 
         command = AnyCommand.createField(uiContext, config, true, false);
         upperPanel.add(command.getContent());
-
-        pauseButton.addActionListener(new ActionListener() {
-                                                  @Override
-                                                  public void actionPerformed(ActionEvent e) {
-                                                      setPaused(pauseButton, !paused);
-                                                      canvas.setPause(!paused);
-                                                  }
-                                              }
-        );
 
         content.add(upperPanel, BorderLayout.NORTH);
 

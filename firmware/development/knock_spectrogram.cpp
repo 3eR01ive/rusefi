@@ -7,7 +7,7 @@
 
 #include "pch.h"
 
-#ifdef KNOCK_SPECTROGRAM
+#if KNOCK_SPECTROGRAM
 
 #include "knock_spectrogram.h"
 #include <climits>
@@ -15,10 +15,6 @@
 #if EFI_TEXT_LOGGING
 static char PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER[128] CCM_OPTIONAL;
 static Logging scLogging("knock_spectrogram", PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER, sizeof(PROTOCOL_KNOCK_SPECTROGRAMM_BUFFER));
-#endif /* EFI_TEXT_LOGGING */
-
-static int initialized = false;
-
 
 static char compressToByte(const float& v, const float& min, const float& max) {
 	float vn = (v-min) / (max-min);
@@ -65,19 +61,15 @@ void base64(Logging& l, const float* data, size_t size, const float& min, const 
 		l.appendChar('=');
 	}
 }
-
+#endif /* EFI_TEXT_LOGGING */
 
 void knockSpectorgramAddLine(float main_freq, float* data, size_t size) {
 #if EFI_TEXT_LOGGING
-	if (!initialized) {
-		return; // this is possible because of initialization sequence
-	}
-
 	if (scLogging.remainingSize() > size) {
 
 		float min = 99999999999;
 		float max = -99999999999;
-		for(int i = 0; i < size; ++i) {
+		for(size_t i = 0; i < size; ++i) {
 			float v = data[i];
 			if(v < min) {
 				min = v;
@@ -104,14 +96,6 @@ void knockSpectorgramAddLine(float main_freq, float* data, size_t size) {
 	}
 
 #endif /* EFI_TEXT_LOGGING */
-}
-
-void initKnockSpectrogram(void) {
-#if EFI_SIMULATOR
-	printf("initKnockSpectorgramm\n");
-#endif
-
-	initialized = true;
 }
 
 #endif /* KNOCK_SPECTROGRAM */

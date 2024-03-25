@@ -10,26 +10,26 @@
 #include "knock_config.h"
 #include "ch.hpp"
 
-#ifdef KNOCK_SPECTROGRAM
+#if KNOCK_SPECTROGRAM
 #include "development/knock_spectrogram.h"
 #include "fft/fft.h"
 
 #define SIZE 512
 
 struct SpectrogramData {
-	float filteredBuffer[SIZE];
+	//float filteredBuffer[SIZE];
 	float frequencies[SIZE/2];
 	float amplitudes[SIZE/2];
 	fft::complex_type fftBuffer[SIZE];
 };
 
-//static NO_CACHE SpectrogramData spectrogramData0;
-static SpectrogramData* spectrogramData = nullptr;//&spectrogramData0;
+static NO_CACHE SpectrogramData spectrogramData0;
+static SpectrogramData* spectrogramData = &spectrogramData0;
 static BigBufferHandle buffer;
 #endif //KNOCK_SPECTROGRAM
 
 
-static NO_CACHE adcsample_t sampleBuffer[2000];
+static NO_CACHE adcsample_t sampleBuffer[1800];
 static int8_t currentCylinderNumber = 0;
 static efitick_t lastKnockSampleTime = 0;
 static Biquad knockFilter;
@@ -191,10 +191,9 @@ void initSoftwareKnock() {
 		knockFilter.configureBandpass(KNOCK_SAMPLE_RATE, 1000 * engineConfiguration->knockBandCustom, 3);
 		adcStart(&KNOCK_ADC, nullptr);
 
-#ifdef KNOCK_SPECTROGRAM
-		initKnockSpectrogram();
-		knockSpectrogramEnable();
-#endif
+// #if KNOCK_SPECTROGRAM
+// 		knockSpectrogramEnable();
+// #endif
 
   // fun fact: we do not offer any ADC channel flexibility like we have for many other kinds of inputs
 		efiSetPadMode("knock ch1", KNOCK_PIN_CH1, PAL_MODE_INPUT_ANALOG);
@@ -232,9 +231,9 @@ static void processLastKnockEvent() {
 			engine->outputChannels.debugFloatField2 = filtered;
 		}
 
-		#ifdef KNOCK_SPECTROGRAM
+		#if KNOCK_SPECTROGRAM
 		if(i < SIZE && engineConfiguration->enableKnockSpectrogram) {
-			spectrogramData->filteredBuffer[i] = volts;
+			//spectrogramData->filteredBuffer[i] = volts;
 		}
 		#endif
 
@@ -253,12 +252,12 @@ static void processLastKnockEvent() {
 
 	float mainFreq = 0.f;
 
-	#ifdef KNOCK_SPECTROGRAM
+	#if KNOCK_SPECTROGRAM
 	if(engineConfiguration->enableKnockSpectrogram) {
-		//constexpr float ratio = 3.3f / 4095.0f;
+		constexpr float ratio = 3.3f / 4095.0f;
 
-		fft::fft(spectrogramData->filteredBuffer, spectrogramData->fftBuffer, SIZE);
-		//fft::fft_adc_sample(ratio, sampleBuffer, spectrogramData->fftBuffer, SIZE);
+		//fft::fft(spectrogramData->filteredBuffer, spectrogramData->fftBuffer, SIZE);
+		fft::fft_adc_sample(ratio, sampleBuffer, spectrogramData->fftBuffer, SIZE);
 		fft::fft_freq(spectrogramData->frequencies, SIZE, KNOCK_SAMPLE_RATE); //samples per sec 218750
 		fft::fft_amp(spectrogramData->fftBuffer, spectrogramData->amplitudes, SIZE);
 		//fft::fft_db(spectrogramData->amplitudes, SIZE);
@@ -292,16 +291,16 @@ void KnockThread::ThreadTask() {
 	}
 }
 
-#ifdef KNOCK_SPECTROGRAM
+#if KNOCK_SPECTROGRAM
 void knockSpectrogramEnable() {
 	chibios_rt::CriticalSectionLocker csl;
 
-	buffer = getBigBuffer(BigBufferUser::KnockSpectrogram);
-	if (!buffer) {
-		return;
-	}
+	// buffer = getBigBuffer(BigBufferUser::KnockSpectrogram);
+	// if (!buffer) {
+	// 	return;
+	// }
 
-	spectrogramData = buffer.get<SpectrogramData>();
+	// spectrogramData = buffer.get<SpectrogramData>();
 
 	engineConfiguration->enableKnockSpectrogram = true;
 }
@@ -311,13 +310,10 @@ void knockSpectrogramDisable() {
 	engineConfiguration->enableKnockSpectrogram = false;
 
 	// we're done with the buffer - let somebody else have it
-	buffer = {};
-	spectrogramData = nullptr;
+	// buffer = {};
+	// spectrogramData = nullptr;
 }
 
-const BigBufferHandle& knockSpectrogramGetBuffer() {
-	return buffer;
-}
-#endif
+#endif /* KNOCK_SPECTROGRAM */
 
 #endif // EFI_SOFTWARE_KNOCK

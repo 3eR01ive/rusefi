@@ -6,8 +6,7 @@
 void initSoftwareKnock();
 void knockSamplingCallback(uint8_t cylinderIndex, efitick_t nowNt);
 
-#ifdef KNOCK_SPECTROGRAM
+#if KNOCK_SPECTROGRAM
 void knockSpectrogramEnable();
 void knockSpectrogramDisable();
-const BigBufferHandle& knockSpectrogramGetBuffer();
 #endif
