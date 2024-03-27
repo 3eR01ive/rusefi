@@ -77,8 +77,6 @@ public class KnockPane {
             @Override
             public void onUpdate(String value) {
                 canvas.processValues(value);
-              /*  canvas.invalidate();
-                canvas.validate();*/
                 canvas.repaint();
             }
         });
@@ -92,16 +90,9 @@ public class KnockPane {
         enableButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //UiUtils.trueRepaint(canvas);
-
-                uiContext.getLinkManager().submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
-                        //latch.countDown();
-                        BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
-                        binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_ENABLE, "start knock analyzer");
-                    }
+                uiContext.getLinkManager().submit(() -> {
+                    BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
+                    binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_ENABLE, "start knock analyzer");
                 });
             }
         });
@@ -112,16 +103,9 @@ public class KnockPane {
         disableButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //UiUtils.trueRepaint(canvas);
-
-                uiContext.getLinkManager().submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        //BurnCommand.execute(ecu.getLinkManager().getBinaryProtocol()));
-                        //latch.countDown();
-                        BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
-                        binaryProtocol.executeCommand(Fields.TS_PERF_TRACE_BEGIN, "start knock analyzer");
-                    }
+                uiContext.getLinkManager().submit(() -> {
+                    BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
+                    binaryProtocol.executeCommand(Fields.TS_PERF_TRACE_BEGIN, "start knock analyzer");
                 });
             }
         });
@@ -130,15 +114,12 @@ public class KnockPane {
 
         JButton saveImageButton = UiUtils.createSaveImageButton();
         upperPanel.add(saveImageButton);
-        saveImageButton.addActionListener(new ActionListener() {
-                                          @Override
-                                          public void actionPerformed(ActionEvent e) {
-                                              int rpm = RpmModel.getInstance().getValue();
-                                              String fileName = FileLog.getDate() + "_knock_" + rpm + "_spectrogram" + ".png";
+        saveImageButton.addActionListener(e -> {
+            int rpm = RpmModel.getInstance().getValue();
+            String fileName = FileLog.getDate() + "_knock_" + rpm + "_spectrogram" + ".png";
 
-                                              UiUtils.saveImageWithPrompt(fileName, upperPanel, canvas);
-                                          }
-                                      }
+            UiUtils.saveImageWithPrompt(fileName, upperPanel, canvas);
+        }
         );
 
         upperPanel.add(new RpmLabel(uiContext,2).getContent());
@@ -177,16 +158,10 @@ public class KnockPane {
     }
 
     public ActionListener getTabSelectedListener() {
-        return new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                command.requestFocus();
-            }
-        };
+        return e -> command.requestFocus();
     }
 
     public class KnockCanvas extends JComponent implements ComponentListener {
-
 
         JComponent dd = this;
         //--------------------------------------
@@ -292,9 +267,8 @@ public class KnockPane {
                 specrtogram[currentIndexXAxis][i] = k;
             }
 
-            Dimension size = getSize();
-            int width = bufferedImage.getWidth();//size.width;
-            int height = bufferedImage.getHeight();//size.height;
+            int width = bufferedImage.getWidth();
+            int height = bufferedImage.getHeight();
 
             float bx = (float)width / (float)SPECTROGRAM_X_AXIS_SIZE;
 
@@ -362,8 +336,6 @@ public class KnockPane {
             if(currentIndexXAxis >= SPECTROGRAM_X_AXIS_SIZE){
                 currentIndexXAxis = 0;
             }
-
-            drawSpectrum();
         }
 
         double lerp(double start, double end, double t) {
@@ -419,91 +391,6 @@ public class KnockPane {
             return 0;
         }
 
-        void drawSpectrum() {
-            /*if(pause) {
-                return;
-            }*/
-
-          /*  Dimension size = getSize();
-            int width = size.width;
-            int height = size.height;
-
-            int bx = width / SPECTROGRAM_X_AXIS_SIZE;*/
-
-         /*   float min = Integer.MAX_VALUE;
-            float max = 0;
-            for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
-                for(int y = 0; y < spectrogramYAxisSize; ++y) {
-                    float value = specrtogram[x][y];
-                    if(value < min) {
-                        min = value;
-                    }
-
-                    if(value > max) {
-                        max = value;
-                    }
-                }
-            }
-*/
-  /*          for(int x = 0; x < SPECTROGRAM_X_AXIS_SIZE; ++x) {
-
-                for(int y = 0; y < spectrogramYAxisSize; ++y) {
-                    float value = specrtogram[x][y];
-                    double lvalue = (1 + value*value);
-                    double lmin = (1 + min*min);
-                    double lmax = (1 + max*max);
-
-                    double normalized = 0;
-                    if((lmax-lmin) != 0) {
-                        normalized = (lvalue-lmin)/(lmax-lmin);
-                    }
-
-                    int color_index = (int)((colorspace.length - 1) * normalized);
-                    if(color_index > colorspace.length - 1){
-                        color_index = colorspace.length - 1;
-                    }
-                    Color color = colorspace[color_index];
-
-                    colors[(spectrogramYAxisSize-1) - y] = color;
-                    amplitudesInColorSpace[y] = ((float)y) / (float) spectrogramYAxisSize;
-                }
-
-                LinearGradientPaint lgp = new LinearGradientPaint(
-                    new Point2D.Float(0, 0),
-                    new Point2D.Float(0, height),
-                    amplitudesInColorSpace,
-                    colors
-                );
-
-                bufferedGraphics.setPaint(lgp);
-
-                bufferedGraphics.fillRect(x * bx, 0, bx, height);
-            }*/
-
-/*            bufferedGraphics.setColor(Color.RED);
-            var line = currentIndexXAxis * bx;
-            bufferedGraphics.drawLine(line, 0, line, height);
-
-
-            for(int i = 0; i < yAxisHz.length; ++i) {
-
-                var y= hzToYScreen(yAxisHz[i], height);
-
-                bufferedGraphics.setColor(Color.WHITE);
-                bufferedGraphics.fillRect(0, y, 30, 3);
-            }
-
-            Font f = bufferedGraphics.getFont();
-            bufferedGraphics.setFont(new Font(f.getName(), Font.BOLD, bufferedGraphics.getFont().getSize() * 10));
-            bufferedGraphics.setColor(Color.RED);
-            bufferedGraphics.drawString(Float.valueOf(mainFrequency).toString() + " Hz", width/2,  100);
-            bufferedGraphics.setFont(f);
-
-            bufferedGraphics.setColor(Color.WHITE);
-            var yy = hzToYScreen(mainFrequency, height);
-            bufferedGraphics.fillRect(0, yy, width, 1);*/
-        }
-
         @Override
         public void paint(Graphics g) {
             super.paint(g);
@@ -512,9 +399,6 @@ public class KnockPane {
 
             // flip buffers
             g.drawImage(bufferedImage, 0, 0, size.width, size.height,null);
-            //g.setColor(Color.RED);
-            //g.drawRect(0, 0, size.width, size.height);
-
 
             int width = bufferedImage.getWidth();//size.width;
             int height = bufferedImage.getHeight();//size.height;
