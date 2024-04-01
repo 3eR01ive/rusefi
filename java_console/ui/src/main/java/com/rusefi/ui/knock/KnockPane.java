@@ -105,7 +105,7 @@ public class KnockPane {
             public void actionPerformed(ActionEvent e) {
                 uiContext.getLinkManager().submit(() -> {
                     BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
-                    binaryProtocol.executeCommand(Fields.TS_PERF_TRACE_BEGIN, "start knock analyzer");
+                    binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_DISABLE, "stop knock analyzer");
                 });
             }
         });
@@ -329,7 +329,7 @@ public class KnockPane {
 
             bufferedGraphics.fillRect((int)(currentIndexXAxis * bx), 0, (int)bx, height);
 
-            //log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
+            log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
 
             ++currentIndexXAxis;
 

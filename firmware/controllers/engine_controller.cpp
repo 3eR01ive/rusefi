@@ -732,7 +732,7 @@ void initRealHardwareEngineController() {
  * UNUSED_SIZE constants.
  */
 #ifndef RAM_UNUSED_SIZE
-#define RAM_UNUSED_SIZE 20000
+#define RAM_UNUSED_SIZE 19000
 #endif
 #ifndef CCM_UNUSED_SIZE
 #define CCM_UNUSED_SIZE 512

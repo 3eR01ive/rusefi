@@ -85,10 +85,13 @@ static bool ffti(complex_type* data, const size_t size)
     return transform(data, size);
 }
 
-bool fft_adc_sample(float ratio, const short unsigned int* data_in, complex_type* data_out, const size_t size)
+bool fft_adc_sample(float ratio, const adcsample_t* data_in, complex_type* data_out, const size_t size)
 {
     for(size_t i = 0; i < size; ++i) {
-        data_out[i] = complex_type(ratio * data_in[i], 0.0);
+		float voltage = ratio * data_in[i];
+		// float db = 10 * log10(voltage * voltage);
+		// db = clampF(-100, db, 100);
+        data_out[i] = complex_type(voltage, 0.0);
     }
 
     return ffti(data_out, size);
@@ -123,7 +126,7 @@ void fft_db(real_type* amplitude, const size_t size)
 {
     for (size_t i = 0; i < size/2; ++i)
     {
-        amplitude[i] = log10(amplitude[i]) * 10;
+        amplitude[i] = log10(amplitude[i] * amplitude[i]) * 10;
     }
 }
 

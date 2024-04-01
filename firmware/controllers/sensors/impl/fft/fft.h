@@ -10,7 +10,7 @@ namespace fft {
 typedef float real_type;
 typedef std::complex<real_type> complex_type;
 
-bool fft_adc_sample(const short unsigned int* data_in, complex_type* data_out, const size_t size);
+bool fft_adc_sample(const adcsample_t* data_in, complex_type* data_out, const size_t size);
 bool fft(const real_type* data_in, complex_type* data_out, const size_t size);
 void fft_freq(real_type* freq, const size_t size, const size_t sampleFreq);
 void fft_amp(const complex_type* fft_data, real_type* amplitude, const size_t size);
