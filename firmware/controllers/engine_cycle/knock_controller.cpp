@@ -51,7 +51,7 @@ int getCylinderKnockBank(uint8_t cylinderNumber) {
 	}
 }
 
-bool KnockControllerBase::onKnockSenseCompleted(uint8_t cylinderNumber, float dbv, efitick_t lastKnockTime) {
+bool KnockControllerBase::onKnockSenseCompleted(uint8_t cylinderNumber, float dbv, float frequency, efitick_t lastKnockTime) {
 	bool isKnock = dbv > m_knockThreshold;
 
 	// Per-cylinder peak detector
@@ -60,6 +60,7 @@ bool KnockControllerBase::onKnockSenseCompleted(uint8_t cylinderNumber, float db
 
 	// All-cylinders peak detector
 	m_knockLevel = allCylinderPeakDetector.detect(dbv, lastKnockTime);
+	m_knockFrequency = frequency;
 
 	if (isKnock) {
 		m_knockCount++;
