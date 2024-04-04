@@ -10,7 +10,6 @@ import com.rusefi.tools.ConsoleTools;
 import com.rusefi.ui.RpmLabel;
 import com.rusefi.ui.RpmModel;
 import com.rusefi.ui.UIContext;
-import com.rusefi.ui.config.BoolConfigField;
 import com.rusefi.ui.config.ConfigUiField;
 import com.rusefi.ui.util.UiUtils;
 import com.rusefi.ui.widgets.AnyCommand;
