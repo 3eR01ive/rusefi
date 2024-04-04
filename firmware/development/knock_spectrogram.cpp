@@ -1,8 +1,8 @@
 /**
  * @file	knock_spectrogram.cpp
  *
- * @date Feb 20, 2023
- * @author Alexey Ershov, (c) 2012-2023
+ * @date Feb 20, 2024
+ * @author Alexey Ershov, (c) 2023-2024
  */
 
 #include "pch.h"

@@ -85,13 +85,13 @@ static bool ffti(complex_type* data, const size_t size)
     return transform(data, size);
 }
 
-bool fft_adc_sample(float ratio, const adcsample_t* data_in, complex_type* data_out, const size_t size)
+bool fft_adc_sample(float * w, float ratio, const adcsample_t* data_in, complex_type* data_out, const size_t size)
 {
     for(size_t i = 0; i < size; ++i) {
 		float voltage = ratio * data_in[i];
-		// float db = 10 * log10(voltage * voltage);
-		// db = clampF(-100, db, 100);
-        data_out[i] = complex_type(voltage, 0.0);
+		//float db = 10 * log10(voltage * voltage);
+		//db = clampF(-100, db, 100);
+        data_out[i] = complex_type(voltage * w[i], 0.0);
     }
 
     return ffti(data_out, size);
@@ -189,7 +189,7 @@ void blackmanharris(float * w, unsigned n, bool sflag)
 
 float get_main_freq(float* amplitudes, float* frequencies, size_t size)
 {
-    float peaks_amp = 0;
+    float peaks_amp = -100.f;
     size_t peaks_index = 0;
 
     for (size_t i = 0; i < size; ++i)

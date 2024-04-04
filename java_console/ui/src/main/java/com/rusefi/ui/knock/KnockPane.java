@@ -40,11 +40,8 @@ public class KnockPane {
 
     private final KnockCanvas canvas = new KnockCanvas();
 
-
     private final JPanel content = new JPanel(new BorderLayout());
     private final AnyCommand command;
-
-    private boolean paused = false;
 
 
     public class KnockKeListener extends KeyAdapter implements ActionListener {
@@ -81,7 +78,6 @@ public class KnockPane {
             }
         });
 
-
         final JPanel upperPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
 
         JButton enableButton = new JButton("start");
@@ -91,6 +87,7 @@ public class KnockPane {
             @Override
             public void actionPerformed(ActionEvent e) {
                 uiContext.getLinkManager().submit(() -> {
+                    //uiContext.getLinkManager().setCompositeLogicEnabled(false); // todo: use big_buffer
                     BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
                     binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_ENABLE, "start knock analyzer");
                 });
@@ -106,6 +103,7 @@ public class KnockPane {
                 uiContext.getLinkManager().submit(() -> {
                     BinaryProtocol binaryProtocol = uiContext.getLinkManager().getConnector().getBinaryProtocol();
                     binaryProtocol.executeCommand(Fields.TS_KNOCK_SPECTROGRAM_DISABLE, "stop knock analyzer");
+                    //uiContext.getLinkManager().setCompositeLogicEnabled(true); // todo: use big_buffer
                 });
             }
         });
@@ -148,11 +146,6 @@ public class KnockPane {
         return canvas;
     }
 
-    private void setPaused(JButton pauseButton, boolean isPaused) {
-        paused = isPaused;
-        UiUtils.setPauseButtonText(pauseButton, paused);
-    }
-
     public JComponent getPanel() {
         return content;
     }
@@ -174,8 +167,6 @@ public class KnockPane {
         Color[] colorspace;
         Color[] colors;
         float[] amplitudesInColorSpace;
-
-        boolean pause = false;
 
         int spectrogramYAxisSize;
 
@@ -225,10 +216,6 @@ public class KnockPane {
             specrtogram = new float[SPECTROGRAM_X_AXIS_SIZE][spectrogramYAxisSize];
             colors = new Color[spectrogramYAxisSize];
             amplitudesInColorSpace = new float[spectrogramYAxisSize];
-        }
-
-        void setPause(boolean v) {
-            pause = v;
         }
 
         private void processValues(String values) {
@@ -329,7 +316,7 @@ public class KnockPane {
 
             bufferedGraphics.fillRect((int)(currentIndexXAxis * bx), 0, (int)bx, height);
 
-            log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
+            //log.info(Arrays.toString(specrtogram[currentIndexXAxis]));
 
             ++currentIndexXAxis;
 
@@ -400,8 +387,8 @@ public class KnockPane {
             // flip buffers
             g.drawImage(bufferedImage, 0, 0, size.width, size.height,null);
 
-            int width = bufferedImage.getWidth();//size.width;
-            int height = bufferedImage.getHeight();//size.height;
+            int width = bufferedImage.getWidth();
+            int height = bufferedImage.getHeight();
 
             float bx = (float)width / (float)SPECTROGRAM_X_AXIS_SIZE;
 
@@ -431,7 +418,6 @@ public class KnockPane {
             //for test
             //var yy2 = hzToYScreen(8117.68, height);
             //g.fillRect(0, yy2, width, 1);
-
         }
 
         @Override
