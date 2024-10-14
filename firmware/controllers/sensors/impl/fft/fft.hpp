@@ -85,16 +85,25 @@ static bool ffti(complex_type* data, const size_t size)
     return transform(data, size);
 }
 
-bool fft_adc_sample(float * w, float ratio, const adcsample_t* data_in, complex_type* data_out, const size_t size)
+bool fft_adc_sample(float * w, float ratio, float sensitivity, const adcsample_t* data_in, complex_type* data_out, const size_t size)
 {
     for(size_t i = 0; i < size; ++i) {
 		float voltage = ratio * data_in[i];
-		//float db = 10 * log10(voltage * voltage);
-		//db = clampF(-100, db, 100);
-        data_out[i] = complex_type(voltage * w[i], 0.0);
+        data_out[i] = complex_type(sensitivity * voltage * w[i], 0.0);
     }
 
     return ffti(data_out, size);
+}
+
+bool fft_adc_sample_filtered(Biquad& knockFilter, float * w, float ratio, float sensitivity, const adcsample_t* data_in, complex_type* data_out, const size_t size)
+{
+	for(size_t i = 0; i < size; ++i) {
+		float voltage = ratio * data_in[i];
+		float filtered = knockFilter.filter(voltage);
+		data_out[i] = complex_type(filtered * w[i] * sensitivity, 0.0);
+	}
+
+	return ffti(data_out, size);	
 }
 
 bool fft(const real_type* data_in, complex_type* data_out, const size_t size)
@@ -106,13 +115,13 @@ bool fft(const real_type* data_in, complex_type* data_out, const size_t size)
     return ffti(data_out, size);
 }
 
-void fft_freq(real_type* freq, const size_t size, const size_t sampleFreq)
-{
-    for (size_t i = 0; i < size/2; i++)
-    {
-        freq[i] = ((real_type)i * sampleFreq) / size;
-    }
-}
+// void fft_freq(real_type* freq, const size_t size, const size_t sampleFreq)
+// {
+//     for (size_t i = 0; i < size/2; i++)
+//     {
+//         freq[i] = ((real_type)i * sampleFreq) / size;
+//     }
+// }
 
 void fft_amp(const complex_type* fft_data, real_type* amplitude, const size_t size)
 {
@@ -122,12 +131,27 @@ void fft_amp(const complex_type* fft_data, real_type* amplitude, const size_t si
     }
 }
 
-void fft_db(real_type* amplitude, const size_t size)
-{
-    for (size_t i = 0; i < size/2; ++i)
-    {
-        amplitude[i] = log10(amplitude[i] * amplitude[i]) * 10;
-    }
+// Fast inverse square root aka "Quake 3 fast inverse square root", multiplied
+// by x. Uses one iteration of Halley's method for precision. See:
+// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Iterative_methods_for_reciprocal_square_roots
+// And: https://github.com/HorstBaerbel/approx
+float fast_sqrt(float x) {
+  union // get bits for floating point value
+  {
+    float x;
+    int32_t i;
+  } u;
+  u.x = x;
+  u.i = 0x5f375a86 - (u.i >> 1); // gives initial guess y0.
+  float xu = x * u.x;
+  float xu2 = xu * u.x;
+  // Halley's method, repeating increases accuracy
+  u.x = (0.125 * 3.0) * xu * (5.0 - xu2 * ((10.0 / 3.0) - xu2));
+  return u.x;
+}
+
+float amplitude(const complex_type& fft) {
+	return fast_sqrt(fft.real()*fft.real() + fft.imag()*fft.imag());
 }
 
 void cosine_window(float * w, unsigned n, const float * coeff, unsigned ncoeff, bool sflag)
@@ -187,34 +211,35 @@ void blackmanharris(float * w, unsigned n, bool sflag)
     cosine_window(w, n, coeff, sizeof(coeff) / sizeof(float), sflag);
 }
 
-float get_main_freq(float* amplitudes, float* frequencies, size_t size)
-{
-    float peaks_amp = -100.f;
-    size_t peaks_index = 0;
+// disable because need memory for amplitudes and frequencies arrays
+// float get_main_freq(float* amplitudes, float* frequencies, size_t size)
+// {
+//     float peaks_amp = -100.f;
+//     size_t peaks_index = 0;
 
-    for (size_t i = 0; i < size; ++i)
-    {
-        float amp = amplitudes[i];
-        if(amp > peaks_amp) {
-            peaks_amp = amp;
-            peaks_index = i;
-        }
-    }
+//     for (size_t i = 0; i < size; ++i)
+//     {
+//         float amp = amplitudes[i];
+//         if(amp > peaks_amp) {
+//             peaks_amp = amp;
+//             peaks_index = i;
+//         }
+//     }
 
-    float sum_amps =    amplitudes[peaks_index - 2] +
-                        amplitudes[peaks_index - 1] +  
-                        amplitudes[peaks_index] + 
-                        amplitudes[peaks_index + 1] +
-                        amplitudes[peaks_index + 2];
+//     float sum_amps =    amplitudes[peaks_index - 2] +
+//                         amplitudes[peaks_index - 1] +  
+//                         amplitudes[peaks_index] + 
+//                         amplitudes[peaks_index + 1] +
+//                         amplitudes[peaks_index + 2];
 
-    float sum_wighted = amplitudes[peaks_index - 2] * frequencies[peaks_index - 2] + 
-                        amplitudes[peaks_index - 1] * frequencies[peaks_index - 1] + 
-                        amplitudes[peaks_index]     * frequencies[peaks_index] + 
-                        amplitudes[peaks_index + 1] * frequencies[peaks_index + 1] +
-                        amplitudes[peaks_index + 2] * frequencies[peaks_index + 2];
+//     float sum_wighted = amplitudes[peaks_index - 2] * frequencies[peaks_index - 2] + 
+//                         amplitudes[peaks_index - 1] * frequencies[peaks_index - 1] + 
+//                         amplitudes[peaks_index]     * frequencies[peaks_index] + 
+//                         amplitudes[peaks_index + 1] * frequencies[peaks_index + 1] +
+//                         amplitudes[peaks_index + 2] * frequencies[peaks_index + 2];
 
-    float mean_freq = sum_wighted / sum_amps;
-    return mean_freq;
-}
+//     float mean_freq = sum_wighted / sum_amps;
+//     return mean_freq;
+// }
 
 }

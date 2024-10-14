@@ -27,7 +27,8 @@ import static com.rusefi.ts_plugin.TsPluginLauncher.VERSION;
 public class Updater {
     private static final String PLUGIN_ENTRY_CLASS = "com.rusefi.ts_plugin.PluginEntry";
     private static final String PLUGIN_BODY_JAR = "rusefi_plugin_body.jar";
-    private static final String LOCAL_JAR_FILE_NAME = FileUtil.RUSEFI_SETTINGS_FOLDER + File.separator + PLUGIN_BODY_JAR;
+    private static final String RUSEFI_SETTINGS_FOLDER = System.getProperty("user.home") + File.separator + ".rusEFI";
+    private static final String LOCAL_JAR_FILE_NAME = RUSEFI_SETTINGS_FOLDER + File.separator + PLUGIN_BODY_JAR;
     private static final String TITLE = "rusEFI plugin installer " + VERSION;
 
     private final JPanel content = new JPanel(new VerticalFlowLayout());
