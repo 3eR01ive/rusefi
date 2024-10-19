@@ -23,7 +23,7 @@ struct SpectrogramData {
 };
 
 static size_t spectrogramStartIndex = 0;
-static SpectrogramData spectrogramData0; 
+static SpectrogramData spectrogramData0;
 static SpectrogramData* spectrogramData = &spectrogramData0;
 
 // TODO: use big_buffer
@@ -35,6 +35,7 @@ static SpectrogramData* spectrogramData = &spectrogramData0;
 
 static NO_CACHE adcsample_t sampleBuffer[1800];
 static int8_t currentCylinderNumber = 0;
+static int8_t channelNumber = 0;
 static efitick_t lastKnockSampleTime = 0;
 static Biquad knockFilter;
 
@@ -157,6 +158,8 @@ void onStartKnockSampling(uint8_t cylinderNumber, float samplingSeconds, uint8_t
 	// Select the appropriate conversion group - it will differ depending on which sensor this cylinder should listen on
 	auto conversionGroup = getConversionGroup(channelIdx);
 
+	channelNumber = channelIdx;
+
 	// Stash the current cylinder's number so we can store the result appropriately
 	currentCylinderNumber = cylinderNumber;
 
@@ -178,7 +181,7 @@ void initSoftwareKnock() {
 		float frequencyHz = 1000 * bore2frequency(engineConfiguration->cylinderBore);
 		frequencyHz = engineConfiguration->knockDetectionUseDoubleFrequency ? 2 * frequencyHz : frequencyHz;
 
-		if(engineConfiguration->knockFrequency > 0.01) 
+		if(engineConfiguration->knockFrequency > 0.01)
 		{
 			frequencyHz = engineConfiguration->knockFrequency;
 		}
@@ -236,14 +239,6 @@ void initSoftwareKnock() {
 	}
 }
 
-// static uint8_t compressToByte(const float& v, const float& min, const float& max) {
-// 	float vn = (v-min) / (max-min);
-// 	int iv =int((float)255 * vn);
-
-// 	uint8_t compressed = (uint8_t)(iv);
-// 	return compressed;
-// }
-
 static uint8_t toDb(const float& voltage) {
 	//float db = 128 * log10(voltage*voltage) + 128;
 	float db = 200 * log10(voltage*voltage) + 40;
@@ -292,38 +287,15 @@ static void processLastKnockEvent() {
 		ScopePerf perf(PE::KnockAnalyzer);
 
 		if(engineConfiguration->enableKnockSpectrogramFilter) {
-			// for(size_t i = 0; i < SIZE; ++i) {
-			// 	float voltage = ratio * sampleBuffer[i];
-			// 	float filtered = knockFilter.filter(voltage);
-			// 	spectrogramData->fftBuffer[i] = fft::complex_type(filtered * spectrogramData->window[i] * engineConfiguration->knockSpectrumSensitivity, 0.0);
-    		// }
-
-    		// fft::ffti(spectrogramData->fftBuffer, SIZE);
 			fft::fft_adc_sample_filtered(knockFilter, spectrogramData->window, ratio, engineConfiguration->knockSpectrumSensitivity, sampleBuffer, spectrogramData->fftBuffer, SIZE);
 		}
 		else {
 			fft::fft_adc_sample(spectrogramData->window, ratio, engineConfiguration->knockSpectrumSensitivity, sampleBuffer, spectrogramData->fftBuffer, SIZE);
 		}
 
-		// disable because need memory for amplitudes and frequencies arrays
-		//fft::fft_freq(spectrogramData->frequencies, SIZE, KNOCK_SAMPLE_RATE); //samples per sec 218750
-		//fft::fft_amp(spectrogramData->fftBuffer, spectrogramData->amplitudes, SIZE);
-		//float mainFreq = fft::get_main_freq(spectrogramData->amplitudes, spectrogramData->frequencies, SIZE / 2);
-		//engine->module<KnockController>()->m_knockFrequency = mainFreq;
-
 		// critical section?
 		auto* spectrum = &engine->module<KnockController>()->m_knockSpectrum[0];
 		for(uint8_t i = 0; i < 16; ++i) { // 16 * 4 = 64 byte for transport to TS
-
-			// uint8_t a = uint8_t(255);
-			// uint8_t b = uint8_t(128);
-			// uint8_t c = uint8_t(64);
-			// uint8_t d = uint8_t(0);
-
-			// uint8_t a = compressToByte(spectrogramData->amplitudes[i * 4], 0.0, 3.3);
-			// uint8_t b = compressToByte(spectrogramData->amplitudes[(i * 4) + 1], 0.0, 3.3);
-			// uint8_t c = compressToByte(spectrogramData->amplitudes[(i * 4) + 2], 0.0, 3.3);
-			// uint8_t d = compressToByte(spectrogramData->amplitudes[(i * 4) + 3], 0.0, 3.3);
 
 			uint8_t startIndex = spectrogramStartIndex + (i * 4);
 
@@ -336,7 +308,11 @@ static void processLastKnockEvent() {
 
 			spectrum[i] = compressed;
 		}
+
+		uint16_t compressedChannelCyl = uint16_t(channelNumber << 8 | currentCylinderNumber);
+		engine->module<KnockController>()->m_knockSpectrumChannelCyl = compressedChannelCyl;
 	}
+
 #endif
 
 	// mean of squares (not yet root)
